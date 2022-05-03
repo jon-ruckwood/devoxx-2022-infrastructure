@@ -1,0 +1,9 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/jon-ruckwood/devoxx-2022-service-repo
+  pullPolicy: IfNotPresent
+  tag: "sha-741bbf1"
+
+imagePullSecrets:
+  - name: ghcr-registry-secret
