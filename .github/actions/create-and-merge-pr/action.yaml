@@ -1,0 +1,62 @@
+name: "Create and Merge Pull Request"
+description: "An action to create, approve and merge a PR"
+inputs:
+  commit-message:
+    description: "The commit message for modified files"
+    required: true
+  branch:
+    description: "The name of the branch that will be created"
+    required: true
+  pr-title:
+    description: "The title of the Pull Request"
+    required: true
+  pr-body:
+    description: "The body of the Pull Request"
+    required: true
+  github-token:
+    description: "A token with write permissions for 'contents' and 'pull-request'"
+    required: true
+  service-account-token:
+    description: "A personal access token with 'repo' scope"
+    required: true
+runs:
+  using: "composite"
+
+  steps:
+
+    - id: commit-and-pr
+      uses: peter-evans/create-pull-request@bd72e1b7922d417764d27d30768117ad7da78a0e # => v4.0.2
+      with:
+        token: ${{ inputs.github-token }}
+        commit-message: ${{ inputs.commit-message }}
+        branch: ${{ inputs.branch }}
+        delete-branch: true
+        title: ${{ inputs.pr-title }}
+        body: ${{ inputs.pr-body }}
+
+    - id: enable-automerge
+      uses: peter-evans/enable-pull-request-automerge@4e255250f89d040c7b85bb434f997079243a9fa7 # => v2.0.0
+      if: steps.commit-and-pr.outputs.pull-request-operation == 'created'
+      with:
+        token: ${{ inputs.service-account-token }} # token with repo scope, GITHUB_TOKEN does not work here
+        pull-request-number: ${{ steps.commit-and-pr.outputs.pull-request-number }}
+        merge-method: squash
+
+    # NOTE: you may not want to allow github-actions to be able to approve PRs, see - https://github.blog/changelog/2022-01-14-github-actions-prevent-github-actions-from-approving-pull-requests/
+    - id: approve-pr
+      uses: actions/github-script@v6
+      if: steps.commit-and-pr.outputs.pull-request-operation == 'created'
+      env:
+        PULL_REQUEST_NUMBER: ${{ steps.commit-and-pr.outputs.pull-request-number }}
+      with:
+        # NOTE: token with repo scope, GITHUB_TOKEN does not work for approval. Ideally you would use a personal
+        #       access token from a service account
+        github-token: ${{ inputs.service-account-token }}
+        # language=javascript
+        script: |
+          github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: process.env.PULL_REQUEST_NUMBER,
+              event: "APPROVE"
+          });

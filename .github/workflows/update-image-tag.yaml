@@ -1,0 +1,46 @@
+name: Update Image Tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      image-tag:
+        description: The new value image tag value
+        required: true
+        type: string
+
+jobs:
+
+  update-image-tag:
+    runs-on: ubuntu-20.04
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    concurrency: main # allow only a single instance
+
+    if: github.ref == 'refs/heads/main'  # allow execution on default branch only
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set image tag
+        # language=bash
+        run: yq -i ".image.tag=\"${IMAGE_TAG}\"" charts/service/values.yaml
+        env:
+          IMAGE_TAG: ${{ github.event.inputs.image-tag }}
+
+      - name: Create and approve Pull Request
+        uses: ./.github/actions/create-and-merge-pr
+        with:
+          commit-message: Update image tag to ${{ github.event.inputs.image-tag }}
+          branch: "update-image-tag/${{ github.event.inputs.image-tag }}"
+          pr-title: 'Update image tag to `${{ github.event.inputs.image-tag }}`'
+          # language=markdown
+          pr-body: |
+            Update image tag:
+            
+            - `${{ github.event.inputs.image-tag }}`
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          service-account-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
