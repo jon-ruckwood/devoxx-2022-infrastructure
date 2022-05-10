@@ -2,6 +2,6 @@ replicaCount: 1
 image:
   repository: ghcr.io/jon-ruckwood/devoxx-2022-service-repo
   pullPolicy: IfNotPresent
-  tag: "sha-d42dac7"
+  tag: "sha-3a63494"
 imagePullSecrets:
   - name: ghcr-registry-secret
