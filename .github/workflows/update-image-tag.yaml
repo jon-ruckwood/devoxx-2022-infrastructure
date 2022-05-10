@@ -44,3 +44,8 @@ jobs:
             - `${{ github.event.inputs.image-tag }}`
           github-token: ${{ secrets.GITHUB_TOKEN }}
           service-account-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+      - name: Add summary
+        env:
+          IMAGE_TAG: ${{ github.event.inputs.image-tag }}
+        run: echo "Updated image tag to \`${IMAGE_TAG}\` :rocket:" >> $GITHUB_STEP_SUMMARY
